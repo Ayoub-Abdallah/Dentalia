@@ -185,3 +185,15 @@ export interface Employee {
   lastPaymentDate?: string;
   createdAt?: string;
 }
+
+export interface SalaryPayment {
+  _id: string;
+  employeeId: string;
+  amount: number;
+  type: 'monthly' | 'advance' | 'bonus';
+  paymentDate: string;
+  paymentMethod: 'cash' | 'bank_transfer' | 'check';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

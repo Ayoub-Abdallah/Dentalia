@@ -219,11 +219,11 @@ function Dashboard() {
   };
 
   if (loading) {
-    return (
+            return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+              </div>
+            );
   }
 
   if (error) {
@@ -262,9 +262,9 @@ function Dashboard() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">New This Month</span>
               <span className="font-semibold text-green-600">+{stats.patients.newThisMonth}</span>
-            </div>
-          </div>
-        </div>
+              </div>
+                          </div>
+                        </div>
 
         {/* Appointments Card */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -276,12 +276,12 @@ function Dashboard() {
             <Link to="/appointments" className="text-blue-500 text-sm hover:underline">
               View All
             </Link>
-          </div>
+                    </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Today's Appointments</span>
               <span className="font-semibold">{stats.appointments.today}</span>
-            </div>
+              </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Upcoming</span>
               <span className="font-semibold">{stats.appointments.upcoming}</span>
@@ -306,15 +306,15 @@ function Dashboard() {
               <span className={`font-semibold ${stats.finances.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 ${stats.finances.netIncome.toLocaleString()}
               </span>
-            </div>
+              </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">This Month</span>
               <span className="font-semibold text-green-600">
                 ${stats.finances.revenue.toLocaleString()}
               </span>
-            </div>
-          </div>
-        </div>
+                          </div>
+                          </div>
+                        </div>
 
         {/* Treatments Card */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -326,12 +326,12 @@ function Dashboard() {
             <Link to="/treatments" className="text-blue-500 text-sm hover:underline">
               View All
             </Link>
-          </div>
+                    </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Treatments</span>
               <span className="font-semibold">{stats.treatments.total}</span>
-            </div>
+              </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">In Progress</span>
               <span className="font-semibold text-yellow-600">{stats.treatments.inProgress}</span>
