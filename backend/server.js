@@ -23,8 +23,20 @@ const app = express();
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 1000, // limit each IP to 1000 requests per windowMs
+  message: {
+    status: 429,
+    message: 'Too many requests from this IP, please try again after an hour',
+    retryAfter: Math.ceil(60 * 60 * 1000 / 1000) // retry after 1 hour in seconds
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  skipFailedRequests: true, // Don't count failed requests against the limit
+  keyGenerator: (req) => {
+    // Use both IP and user ID if available for more granular rate limiting
+    return req.user ? `${req.ip}-${req.user._id}` : req.ip;
+  }
 });
 
 // Middleware

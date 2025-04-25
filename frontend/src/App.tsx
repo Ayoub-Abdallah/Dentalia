@@ -37,14 +37,14 @@ function App() {
         <Route element={isAuthenticated ? <Layout /> : <Navigate to="/login" replace />}>
           <Route index element={<Dashboard />} />
           
-          {/* Only admin and receptionists */}
+          {/* Only admin and staff */}
           <Route path="patients" element={
-            <ProtectedRoute allowedRoles={['admin', 'receptionist']}>
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <Patients />
             </ProtectedRoute>
           } />
           <Route path="appointments" element={
-            <ProtectedRoute allowedRoles={['admin', 'receptionist']}>
+            <ProtectedRoute allowedRoles={['admin', 'staff']}>
               <Appointments />
             </ProtectedRoute>
           } />

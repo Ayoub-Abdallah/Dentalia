@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
 import { 
   Users, Calendar, FileText, DollarSign, 
@@ -8,8 +8,14 @@ import {
 } from 'lucide-react';
 
 const Layout: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Building2 },
@@ -81,6 +87,7 @@ const Layout: React.FC = () => {
                     </p>
                   </div>
                   <button
+                    onClick={handleLogout}
                     className="ml-auto flex-shrink-0 bg-white p-1 text-gray-400 rounded-full hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
                     <LogOut className="h-6 w-6" />

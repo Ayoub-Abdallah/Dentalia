@@ -22,8 +22,14 @@ export const authService = {
         console.log("=================response.data===================")
         console.log(response.data)
         localStorage.setItem('token', response.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data));
-        // localStorage.setItem('role', response.data.role);
+        // Store the user data without the token
+        const userData = { 
+          _id: response.data._id,
+          name: response.data.name,
+          email: response.data.email,
+          role: response.data.role
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
         api.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
       }
       return response.data;
@@ -46,8 +52,17 @@ export const authService = {
 
   getUser(): any | null {
     try {
-      const user = localStorage.getItem('user');
-      return user ? JSON.parse(user) : null;
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return null;
+      
+      const user = JSON.parse(userStr);
+      // Ensure the user object has the expected structure
+      if (!user || !user.role) {
+        console.error('Invalid user data structure:', user);
+        return null;
+      }
+      
+      return user;
     } catch (error) {
       console.error('Error parsing user:', error);
       return null;

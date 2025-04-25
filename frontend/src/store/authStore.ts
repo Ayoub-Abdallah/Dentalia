@@ -22,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: () => {
     authService.initializeAuth();
     const user = authService.getUser();
+    console.log('Initializing auth store with user:', user);
     set({ 
       isAuthenticated: authService.isAuthenticated(),
       user 
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const response = await authService.login(credentials);
       set({ 
         isAuthenticated: true, 
-        user: response.user, 
+        user: response,
         error: null 
       });
     } catch (error: any) {
