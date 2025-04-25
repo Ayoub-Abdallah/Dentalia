@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
-import type { Patient } from '../types';
+import { Plus, Search, Edit2, Trash2, X, Calendar } from 'lucide-react';
+import type { Patient, Appointment } from '../types';
 import { usePatientStore } from '../store/patientStore';
+import { appointmentService } from '../lib/appointmentService';
 import { toast } from 'react-hot-toast';
 
 type Gender = 'male' | 'female' | 'other';
+type AppointmentType = 'checkup' | 'cleaning' | 'filling' | 'root canal' | 'extraction' | 'other';
+type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show';
 
 interface FormData {
   firstName: string;
@@ -26,6 +29,16 @@ interface FormData {
     relationship: string;
     phone: string;
   };
+  notes: string;
+}
+
+interface AppointmentFormData {
+  patient: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  type: AppointmentType;
+  status: AppointmentStatus;
   notes: string;
 }
 
@@ -52,12 +65,24 @@ const initialFormData: FormData = {
   notes: ''
 };
 
+const initialAppointmentFormData: AppointmentFormData = {
+  patient: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  type: 'checkup',
+  status: 'scheduled',
+  notes: ''
+};
+
 export default function Patients() {
   const { patients, isLoading, error, fetchPatients, createPatient, updatePatient, deletePatient } = usePatientStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [appointmentFormData, setAppointmentFormData] = useState<AppointmentFormData>(initialAppointmentFormData);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +110,7 @@ export default function Patients() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-    const patientData = {
+      const patientData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
@@ -103,16 +128,39 @@ export default function Patients() {
       if (selectedPatient?._id) {
         await updatePatient(selectedPatient._id, patientData);
         toast.success('Patient updated successfully');
-    } else {
+      } else {
         await createPatient(patientData);
         toast.success('Patient created successfully');
-    }
+      }
 
-    setShowAddModal(false);
-    setSelectedPatient(null);
+      setShowAddModal(false);
+      setSelectedPatient(null);
       setFormData(initialFormData);
     } catch (error) {
       toast.error('Failed to save patient');
+    }
+  };
+
+  const handleAppointmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!selectedPatient?._id) {
+        toast.error('No patient selected');
+        return;
+      }
+
+      const appointmentData = {
+        ...appointmentFormData,
+        patient: selectedPatient._id
+      };
+
+      await appointmentService.createAppointment(appointmentData);
+      toast.success('Appointment created successfully');
+      setShowAppointmentModal(false);
+      setAppointmentFormData(initialAppointmentFormData);
+    } catch (error) {
+      console.error('Error creating appointment:', error);
+      toast.error('Failed to create appointment');
     }
   };
 
@@ -141,6 +189,15 @@ export default function Patients() {
       notes: patient.notes || ''
     });
     setShowAddModal(true);
+  };
+
+  const handleCreateAppointment = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setAppointmentFormData({
+      ...initialAppointmentFormData,
+      patient: patient._id || ''
+    });
+    setShowAppointmentModal(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -194,18 +251,18 @@ export default function Patients() {
       </div>
 
       <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
             ref={searchInputRef}
-              type="text"
-              placeholder="Search patients..."
-              value={searchQuery}
+            type="text"
+            placeholder="Search patients..."
+            value={searchQuery}
             onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow">
         <div className="overflow-x-auto">
@@ -215,46 +272,54 @@ export default function Patients() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPatients.map((patient) => (
                 <tr key={patient._id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {patient.firstName} {patient.lastName}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{patient.email}</div>
-                      <div className="text-sm text-gray-500">{patient.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(patient.dateOfBirth).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(patient)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
-                      >
-                        <Edit2 className="w-5 h-5" />
-                      </button>
-                      <button
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {patient.firstName} {patient.lastName}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{patient.email}</div>
+                    <div className="text-sm text-gray-500">{patient.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(patient.dateOfBirth).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleCreateAppointment(patient)}
+                      className="text-green-600 hover:text-green-900 mr-4"
+                      title="Create Appointment"
+                    >
+                      <Calendar className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleEdit(patient)}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(patient._id || '')}
-                        className="text-red-600 hover:text-red-900"
+                      className="text-red-600 hover:text-red-900"
                       disabled={!patient._id}
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* Patient Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -355,7 +420,6 @@ export default function Patients() {
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
@@ -385,7 +449,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Insurance
+                    Insurance Provider
                   </label>
                   <input
                     type="text"
@@ -429,7 +493,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Relationship
+                    Emergency Contact Relationship
                   </label>
                   <input
                     type="text"
@@ -443,7 +507,7 @@ export default function Patients() {
                     Emergency Contact Phone
                   </label>
                   <input
-                    type="tel"
+                    type="text"
                     value={formData.emergencyContact.phone}
                     onChange={(e) => setFormData({ ...formData, emergencyContact: { ...formData.emergencyContact, phone: e.target.value } })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
@@ -477,6 +541,131 @@ export default function Patients() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   {selectedPatient ? 'Update Patient' : 'Add Patient'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Appointment Modal */}
+      {showAppointmentModal && selectedPatient && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold">
+                Create Appointment for {selectedPatient.firstName} {selectedPatient.lastName}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAppointmentModal(false);
+                  setSelectedPatient(null);
+                }}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleAppointmentSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={appointmentFormData.date}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, date: e.target.value })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={appointmentFormData.startTime}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, startTime: e.target.value })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={appointmentFormData.endTime}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, endTime: e.target.value })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <select
+                    required
+                    value={appointmentFormData.type}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, type: e.target.value as AppointmentType })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="checkup">Checkup</option>
+                    <option value="cleaning">Cleaning</option>
+                    <option value="filling">Filling</option>
+                    <option value="root canal">Root Canal</option>
+                    <option value="extraction">Extraction</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    required
+                    value={appointmentFormData.status}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, status: e.target.value as AppointmentStatus })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="no-show">No Show</option>
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={appointmentFormData.notes}
+                    onChange={(e) => setAppointmentFormData({ ...appointmentFormData, notes: e.target.value })}
+                    rows={3}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAppointmentModal(false);
+                    setSelectedPatient(null);
+                  }}
+                  className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Create Appointment
                 </button>
               </div>
             </form>

@@ -31,4 +31,4 @@ export const financialService = {
     const response = await api.delete(`/financial/${id}`);
     return response.data;
   }
-}; 
+};

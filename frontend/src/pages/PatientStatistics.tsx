@@ -1,23 +1,59 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Calendar, TrendingUp, BarChart2 } from 'lucide-react';
-import type { Patient } from '../types';
+import type { Patient, Appointment } from '../types';
+import { patientService } from '../lib/patientService';
+import { appointmentService } from '../lib/appointmentService';
+import { toast } from 'react-hot-toast';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 function PatientStatistics() {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load data from localStorage
-    const savedPatients = localStorage.getItem('patients');
-    const savedAppointments = localStorage.getItem('appointments');
-    
-    if (savedPatients) {
-      setPatients(JSON.parse(savedPatients));
-    }
-    if (savedAppointments) {
-      setAppointments(JSON.parse(savedAppointments));
-    }
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [patientsData, appointmentsData] = await Promise.all([
+        patientService.getAllPatients(),
+        appointmentService.getAllAppointments()
+      ]);
+      setPatients(patientsData);
+      setAppointments(appointmentsData);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load statistics data');
+      toast.error('Failed to load statistics data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate demographics
   const totalPatients = patients.length;
@@ -36,6 +72,73 @@ function PatientStatistics() {
     acc[month] = (acc[month] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  // Calculate treatment distribution
+  const treatmentDistribution = appointments.reduce((acc, appointment) => {
+    acc[appointment.type] = (acc[appointment.type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Calculate patient growth data
+  const patientGrowthData = patients.reduce((acc, patient) => {
+    const month = new Date(patient.createdAt || new Date()).toLocaleString('default', { month: 'short' });
+    acc[month] = (acc[month] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Prepare chart data
+  const chartData = {
+    labels: Object.keys(patientGrowthData),
+    datasets: [
+      {
+        label: 'New Patients',
+        data: Object.values(patientGrowthData),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1,
+        },
+      },
+    },
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline"> {error}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -94,8 +197,8 @@ function PatientStatistics() {
             <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
             Patient Growth
           </h2>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            Growth Chart Placeholder
+          <div className="h-64">
+            <Line data={chartData} options={chartOptions} />
           </div>
         </div>
 
@@ -105,8 +208,13 @@ function PatientStatistics() {
             <BarChart2 className="w-5 h-5 mr-2 text-blue-500" />
             Treatment Distribution
           </h2>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            Treatment Distribution Chart Placeholder
+          <div className="space-y-4">
+            {Object.entries(treatmentDistribution).map(([type, count]) => (
+              <div key={type} className="flex justify-between items-center">
+                <span className="text-gray-600">{type}</span>
+                <span className="font-semibold">{count} appointments</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -17,6 +17,7 @@ const invoiceRoutes = require('./routes/invoiceRoutes');
 const userRoutes = require('./routes/userRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const financialRoutes = require('./routes/financialRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 const app = express();
 
@@ -47,12 +48,13 @@ connectDB();
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/treatments', treatmentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/financial', financialRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

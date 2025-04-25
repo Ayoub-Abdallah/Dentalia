@@ -1,17 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import type { Appointment } from '../types';
+import { appointmentService } from '../lib/appointmentService';
+import { toast } from 'react-hot-toast';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 function AppointmentAnalytics() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load appointments from localStorage
-    const savedAppointments = localStorage.getItem('appointments');
-    if (savedAppointments) {
-      setAppointments(JSON.parse(savedAppointments));
-    }
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const appointmentsData = await appointmentService.getAllAppointments();
+      setAppointments(appointmentsData);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load appointment data');
+      toast.error('Failed to load appointment data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate completion rates
   const totalAppointments = appointments.length;
@@ -27,8 +63,73 @@ function AppointmentAnalytics() {
   }, {} as Record<string, number>);
 
   // Calculate average appointment duration
-  const totalDuration = appointments.reduce((sum, appointment) => sum + appointment.duration, 0);
+  const totalDuration = appointments.reduce((sum, appointment) => {
+    const start = new Date(`2000-01-01T${appointment.startTime}`);
+    const end = new Date(`2000-01-01T${appointment.endTime}`);
+    return sum + (end.getTime() - start.getTime()) / (1000 * 60); // Convert to minutes
+  }, 0);
   const averageDuration = totalAppointments > 0 ? totalDuration / totalAppointments : 0;
+
+  // Calculate appointment growth data
+  const appointmentGrowthData = appointments.reduce((acc, appointment) => {
+    const month = new Date(appointment.date).toLocaleString('default', { month: 'short' });
+    acc[month] = (acc[month] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Prepare chart data
+  const chartData = {
+    labels: Object.keys(appointmentGrowthData),
+    datasets: [
+      {
+        label: 'Appointments',
+        data: Object.values(appointmentGrowthData),
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        tension: 0.3,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          stepSize: 1,
+        },
+      },
+    },
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error!</strong>
+          <span className="block sm:inline"> {error}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -95,8 +196,8 @@ function AppointmentAnalytics() {
             <TrendingUp className="w-5 h-5 mr-2 text-blue-500" />
             Appointment Growth
           </h2>
-          <div className="h-64 flex items-center justify-center text-gray-500">
-            Growth Chart Placeholder
+          <div className="h-64">
+            <Line data={chartData} options={chartOptions} />
           </div>
         </div>
       </div>

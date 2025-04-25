@@ -121,14 +121,13 @@ export interface FinancialRecord {
 }
 
 export interface Financial {
-  _id: string;
+  _id?: string;
   type: 'income' | 'expense';
   amount: number;
   description: string;
-  category: 'consultation' | 'treatment' | 'medication' | 'equipment' | 'salary' | 'rent' | 'utilities' | 'maintenance' | 'other';
+  category: string;
+  date: string;
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface Settings {
