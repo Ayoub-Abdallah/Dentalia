@@ -12,7 +12,6 @@ exports.getTreatments = asyncHandler(async (req, res, next) => {
       select: 'firstName lastName email'
     });
   
-  console.log('Treatments with populated patients:', treatments); // Debug log
   res.status(200).json({ success: true, data: treatments });
 });
 
@@ -63,11 +62,56 @@ exports.updateTreatment = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/treatments/:id
 // @access  Private
 exports.deleteTreatment = asyncHandler(async (req, res, next) => {
-  const treatment = await Treatment.findByIdAndDelete(req.params.id);
+  const treatment = await Treatment.findById(req.params.id);
 
   if (!treatment) {
     return next(new ErrorResponse(`Treatment not found with id of ${req.params.id}`, 404));
   }
 
+  await treatment.remove();
   res.status(200).json({ success: true, data: {} });
+});
+
+// @desc    Add payment to treatment
+// @route   POST /api/treatments/:id/payments
+// @access  Private
+exports.addPayment = asyncHandler(async (req, res, next) => {
+  const { amount, method, notes } = req.body;
+
+  if (!amount || !method) {
+    return next(new ErrorResponse('Please provide amount and payment method', 400));
+  }
+
+  const treatment = await Treatment.findById(req.params.id);
+
+  if (!treatment) {
+    return next(new ErrorResponse(`Treatment not found with id of ${req.params.id}`, 404));
+  }
+
+  try {
+    await treatment.addPayment(amount, method, notes);
+    res.status(200).json({ success: true, data: treatment });
+  } catch (error) {
+    return next(new ErrorResponse(error.message, 400));
+  }
+});
+
+// @desc    Get treatment payment history
+// @route   GET /api/treatments/:id/payments
+// @access  Private
+exports.getPaymentHistory = asyncHandler(async (req, res, next) => {
+  const treatment = await Treatment.findById(req.params.id);
+
+  if (!treatment) {
+    return next(new ErrorResponse(`Treatment not found with id of ${req.params.id}`, 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      paymentHistory: treatment.paymentHistory,
+      totalPaid: treatment.paidAmount,
+      remainingBalance: treatment.remainingBalance
+    }
+  });
 }); 

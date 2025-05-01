@@ -1,0 +1,41 @@
+{
+  "patients": {
+    "title": "المرضى",
+    "addPatient": "إضافة مريض",
+    "searchPlaceholder": "البحث عن المرضى...",
+    "name": "الاسم",
+    "contact": "جهة الاتصال",
+    "dateOfBirth": "تاريخ الميلاد",
+    "actions": "الإجراءات",
+    "createAppointment": "إنشاء موعد",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "gender": "الجنس",
+    "male": "ذكر",
+    "female": "أنثى",
+    "other": "آخر",
+    "address": "العنوان",
+    "medicalHistory": "التاريخ الطبي",
+    "allergies": "الحساسية (مفصولة بفواصل)",
+    "insurance": {
+      "provider": "شركة التأمين",
+      "policyNumber": "رقم البوليصة",
+      "groupNumber": "رقم المجموعة"
+    },
+    "emergencyContact": {
+      "name": "اسم جهة الاتصال في حالات الطوارئ",
+      "relationship": "العلاقة مع جهة الاتصال في حالات الطوارئ",
+      "phone": "هاتف جهة الاتصال في حالات الطوارئ"
+    },
+    "notes": "ملاحظات",
+    "cancel": "إلغاء",
+    "updatePatient": "تحديث المريض",
+    "addNewPatient": "إضافة مريض جديد",
+    "editPatient": "تعديل المريض",
+    "deleteConfirm": "هل أنت متأكد من حذف هذا المريض؟"
+  }
+} 

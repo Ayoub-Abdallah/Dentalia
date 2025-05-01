@@ -9,67 +9,70 @@ export interface Patient {
   _id?: string;
   firstName: string;
   lastName: string;
-  email: string;
-  phone: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
+  age?: number;
+  dateOfBirth?: string;
+  email?: string;
+  phone?: string;
+  gender?: string;
   address?: string;
   medicalHistory?: string;
-  dentalHistory?: {
-    procedure: string;
-    date: string;
-    notes: string;
-  }[];
+  allergies?: string[];
   insurance?: {
-    provider: string;
-    policyNumber: string;
-    groupNumber: string;
+    provider?: string;
+    policyNumber?: string;
+    groupNumber?: string;
   };
   emergencyContact?: {
-    name: string;
-    relationship: string;
-    phone: string;
+    name?: string;
+    relationship?: string;
+    phone?: string;
   };
   notes?: string;
-  allergies?: string[];
+  treatments?: Treatment[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
-export type AppointmentType = 'checkup' | 'cleaning' | 'filling' | 'root canal' | 'extraction' | 'crown' | 'other';
+export interface AppointmentType {
+  _id: string;
+  name: string;
+  description?: string;
+  duration: number;
+  color: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type AppointmentStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no-show';
 
 export interface Appointment {
   _id: string;
-  patient: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-  };
+  patient: Patient;
+  type: AppointmentType;
   date: string;
   startTime: string;
   endTime: string;
-  type: AppointmentType;
   status: AppointmentStatus;
   notes?: string;
-  treatmentPlan?: string;
-  createdAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Treatment {
-  _id: string;
-  patient: string | {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
+  _id?: string;
   type: string;
-  description: string;
-  cost: number;
   date: string;
-  status: 'planned' | 'in-progress' | 'completed';
+  description: string;
+  status: 'pending' | 'in-progress' | 'completed';
   notes?: string;
-  createdAt: string;
+  patient: string;
+  cost?: number;
+  paymentStatus?: 'pending' | 'partial' | 'paid';
+  nextAppointment?: string;
+  attachments?: string[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TreatmentPlan {

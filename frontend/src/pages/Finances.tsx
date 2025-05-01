@@ -42,7 +42,7 @@ function Finances() {
     e.preventDefault();
     try {
       setLoading(true);
-      if (selectedRecord) {
+      if (selectedRecord && selectedRecord._id) {
         await financialService.updateFinancial(selectedRecord._id, formData);
         toast.success('Financial record updated successfully');
       } else {
@@ -67,7 +67,8 @@ function Finances() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
     if (window.confirm('Are you sure you want to delete this record?')) {
       try {
         setLoading(true);
@@ -158,7 +159,7 @@ function Finances() {
                     {record.type}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${record.amount.toFixed(2)}
+                    DA {record.amount.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {record.category}

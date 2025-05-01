@@ -92,7 +92,7 @@ function TreatmentInsights() {
     labels: Object.keys(revenueByType),
     datasets: [
       {
-        label: 'Revenue ($)',
+        label: 'Revenue (DA)',
         data: Object.values(revenueByType),
         backgroundColor: 'rgba(34, 197, 94, 0.5)',
         borderColor: 'rgb(34, 197, 94)',
@@ -129,7 +129,7 @@ function TreatmentInsights() {
         beginAtZero: true,
         ticks: {
           callback: function(value: number | string) {
-            return `$${Number(value).toLocaleString()}`;
+            return `DA ${Number(value).toLocaleString()}`;
           }
         },
       },
@@ -200,19 +200,19 @@ function TreatmentInsights() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Revenue</span>
               <span className="font-semibold text-green-600">
-                ${totalRevenue.toLocaleString()}
+                DA {totalRevenue.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Average Treatment Cost</span>
               <span className="font-semibold">
-                ${averageCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                DA {averageCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Revenue per Completed Treatment</span>
               <span className="font-semibold">
-                ${completedTreatments > 0 ? (totalRevenue / completedTreatments).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                DA {completedTreatments > 0 ? (totalRevenue / completedTreatments).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
               </span>
             </div>
           </div>

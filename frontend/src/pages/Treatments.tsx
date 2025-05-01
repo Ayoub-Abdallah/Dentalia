@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, DollarSign } from 'lucide-react';
 import { Treatment, Patient } from '../types';
 import { toast } from 'react-hot-toast';
 import { patientService } from '../lib/patientService';
+import { treatmentService } from '../lib/treatmentService';
 
 function Treatments() {
   const [treatments, setTreatments] = useState<Treatment[]>([]);
@@ -20,6 +21,13 @@ function Treatments() {
     date: new Date().toISOString().split('T')[0],
     status: 'planned' as 'planned' | 'in-progress' | 'completed',
     notes: '',
+  });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedTreatmentForPayment, setSelectedTreatmentForPayment] = useState<Treatment | null>(null);
+  const [paymentData, setPaymentData] = useState({
+    amount: 0,
+    method: 'cash' as 'cash' | 'credit_card' | 'insurance' | 'bank_transfer',
+    notes: ''
   });
 
   useEffect(() => {
@@ -178,6 +186,38 @@ function Treatments() {
     }
   };
 
+  const handleAddPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTreatmentForPayment?._id) {
+      toast.error('Invalid treatment selected');
+      return;
+    }
+
+    try {
+      const updatedTreatment = await treatmentService.addPayment(
+        selectedTreatmentForPayment._id,
+        paymentData
+      );
+      
+      // Update the treatments list with the updated treatment
+      setTreatments(treatments.map(treatment => 
+        treatment._id === updatedTreatment._id ? updatedTreatment : treatment
+      ));
+      
+      setShowPaymentModal(false);
+      setSelectedTreatmentForPayment(null);
+      setPaymentData({
+        amount: 0,
+        method: 'cash',
+        notes: ''
+      });
+      toast.success('Payment added successfully');
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to add payment');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -239,70 +279,63 @@ function Treatments() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Patient
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Cost
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredTreatments.map((treatment) => (
+            {treatments.map((treatment) => (
               <tr key={treatment._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {treatment.type}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {(() => {
-                    console.log('Treatment patient data:', treatment.patient); // Debug log
-                    if (treatment.patient && typeof treatment.patient === 'object') {
-                      return `${treatment.patient.firstName} ${treatment.patient.lastName}`;
-                    } else {
-                      const patient = patients.find(p => p._id === treatment.patient);
-                      return patient ? `${patient.firstName} ${patient.lastName}` : 'Unknown Patient';
-                    }
-                  })()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {treatment.date ? new Date(treatment.date).toLocaleDateString() : 'N/A'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${treatment.cost.toFixed(2)}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    treatment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                    treatment.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
+                  {typeof treatment.patient === 'string' 
+                    ? patients.find(p => p._id === treatment.patient)?.firstName
+                    : `${treatment.patient.firstName} ${treatment.patient.lastName}`}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">{treatment.type}</td>
+                <td className="px-6 py-4 whitespace-nowrap">DA {(treatment.cost || 0).toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">DA {(treatment.paidAmount || 0).toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">DA {((treatment.cost || 0) - (treatment.paidAmount || 0)).toFixed(2)}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    ${treatment.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                      treatment.status === 'in-progress' ? 'bg-yellow-100 text-yellow-800' : 
+                      'bg-gray-100 text-gray-800'}`}>
                     {treatment.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => {
+                      setSelectedTreatmentForPayment(treatment);
+                      const remainingBalance = Number(treatment.cost || 0) - Number(treatment.paidAmount || 0);
+                      setPaymentData({
+                        amount: remainingBalance > 0 ? remainingBalance : 0,
+                        method: 'cash',
+                        notes: ''
+                      });
+                      setShowPaymentModal(true);
+                    }}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
+                    disabled={(treatment.paidAmount || 0) >= (treatment.cost || 0)}
+                  >
+                    <DollarSign className="w-4 h-4 inline" />
+                  </button>
                   <button
                     onClick={() => handleEdit(treatment)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
+                    className="text-indigo-600 hover:text-indigo-900 mr-4"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-4 h-4 inline" />
                   </button>
                   <button
                     onClick={() => handleDelete(treatment._id)}
                     className="text-red-600 hover:text-red-900"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 inline" />
                   </button>
                 </td>
               </tr>
@@ -431,6 +464,139 @@ function Treatments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showPaymentModal && selectedTreatmentForPayment && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+          <div className="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Add Payment</h3>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              {/* Payment Form */}
+              <div>
+                <form onSubmit={handleAddPayment}>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Amount
+                    </label>
+                    <input
+                      type="number"
+                      value={paymentData.amount || 0}
+                      onChange={(e) => {
+                        const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                        setPaymentData({ ...paymentData, amount: value });
+                      }}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      min="0"
+                      max={Number(selectedTreatmentForPayment?.cost || 0) - Number(selectedTreatmentForPayment?.paidAmount || 0)}
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Payment Method
+                    </label>
+                    <select
+                      value={paymentData.method}
+                      onChange={(e) => setPaymentData({ ...paymentData, method: e.target.value as 'cash' | 'credit_card' | 'insurance' | 'bank_transfer' })}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="credit_card">Credit Card</option>
+                      <option value="insurance">Insurance</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      value={paymentData.notes}
+                      onChange={(e) => setPaymentData({ ...paymentData, notes: e.target.value })}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowPaymentModal(false)}
+                      className="mr-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+                    >
+                      Add Payment
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Payment History */}
+              <div className="border-l pl-6">
+                <h4 className="text-lg font-medium mb-4">Payment History</h4>
+                <div className="space-y-4">
+                  {selectedTreatmentForPayment.paymentHistory && selectedTreatmentForPayment.paymentHistory.length > 0 ? (
+                    selectedTreatmentForPayment.paymentHistory
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .map((payment, index) => (
+                        <div key={index} className="bg-gray-50 p-3 rounded-md">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium">DA {payment.amount.toFixed(2)}</p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(payment.date).toLocaleDateString()} at{' '}
+                                {new Date(payment.date).toLocaleTimeString()}
+                              </p>
+                              <p className="text-sm text-gray-600 capitalize">
+                                {payment.method.replace('_', ' ')}
+                              </p>
+                            </div>
+                            {payment.notes && (
+                              <p className="text-sm text-gray-600 italic">{payment.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="text-gray-500 italic">No payment history available</p>
+                  )}
+                </div>
+                
+                {/* Payment Summary */}
+                <div className="mt-6 pt-4 border-t">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Total Cost:</span>
+                    <span className="font-medium">DA {selectedTreatmentForPayment.cost.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">Total Paid:</span>
+                    <span className="font-medium">DA {selectedTreatmentForPayment.paidAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-medium text-lg">
+                    <span>Remaining Balance:</span>
+                    <span className={selectedTreatmentForPayment.remainingBalance === 0 ? 'text-green-600' : 'text-red-600'}>
+                      DA {(selectedTreatmentForPayment.cost - selectedTreatmentForPayment.paidAmount).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

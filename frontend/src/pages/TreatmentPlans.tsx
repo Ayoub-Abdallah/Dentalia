@@ -38,7 +38,7 @@ export default function TreatmentPlans() {
             <h2 className="text-xl font-semibold">{plan.patientId}</h2>
             <p className="text-gray-600">Status: {plan.status}</p>
             <p className="text-gray-600">Start Date: {new Date(plan.startDate).toLocaleDateString()}</p>
-            <p className="text-gray-600">Total Cost: ${plan.totalCost}</p>
+            <p className="text-gray-600">Total Cost: DA {plan.totalCost}</p>
             <div className="mt-2">
               <h3 className="font-medium">Treatments:</h3>
               <ul className="list-disc list-inside">

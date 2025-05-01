@@ -1,0 +1,41 @@
+{
+  "patients": {
+    "title": "Patients",
+    "addPatient": "Ajouter un Patient",
+    "searchPlaceholder": "Rechercher des patients...",
+    "name": "Nom",
+    "contact": "Contact",
+    "dateOfBirth": "Date de Naissance",
+    "actions": "Actions",
+    "createAppointment": "Créer un Rendez-vous",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "gender": "Genre",
+    "male": "Masculin",
+    "female": "Féminin",
+    "other": "Autre",
+    "address": "Adresse",
+    "medicalHistory": "Antécédents Médicaux",
+    "allergies": "Allergies (séparées par des virgules)",
+    "insurance": {
+      "provider": "Assurance",
+      "policyNumber": "Numéro de Police",
+      "groupNumber": "Numéro de Groupe"
+    },
+    "emergencyContact": {
+      "name": "Nom du Contact d'Urgence",
+      "relationship": "Relation avec le Contact d'Urgence",
+      "phone": "Téléphone du Contact d'Urgence"
+    },
+    "notes": "Notes",
+    "cancel": "Annuler",
+    "updatePatient": "Mettre à Jour le Patient",
+    "addNewPatient": "Ajouter un Nouveau Patient",
+    "editPatient": "Modifier le Patient",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce patient ?"
+  }
+} 

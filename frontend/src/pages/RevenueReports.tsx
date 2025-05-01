@@ -143,7 +143,7 @@ function RevenueReports() {
         beginAtZero: true,
         ticks: {
           callback: function(value: number | string) {
-            return `$${Number(value).toLocaleString()}`;
+            return `DA ${Number(value).toLocaleString()}`;
           }
         },
       },
@@ -194,19 +194,19 @@ function RevenueReports() {
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Revenue</span>
               <span className="font-semibold text-green-600">
-                ${totalRevenue.toLocaleString()}
+                DA {totalRevenue.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total Expenses</span>
               <span className="font-semibold text-red-600">
-                ${totalExpenses.toLocaleString()}
+                DA {totalExpenses.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Net Income</span>
               <span className={`font-semibold ${netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ${netIncome.toLocaleString()}
+                DA {netIncome.toLocaleString()}
               </span>
             </div>
           </div>
@@ -245,8 +245,8 @@ function RevenueReports() {
               <div key={month} className="flex justify-between items-center">
                 <span className="text-gray-600">{month}</span>
                 <div className="flex gap-4">
-                  <span className="text-green-600">+${data.income.toLocaleString()}</span>
-                  <span className="text-red-600">-${data.expenses.toLocaleString()}</span>
+                  <span className="text-green-600">+DA {data.income.toLocaleString()}</span>
+                  <span className="text-red-600">-DA {data.expenses.toLocaleString()}</span>
                 </div>
               </div>
             ))}

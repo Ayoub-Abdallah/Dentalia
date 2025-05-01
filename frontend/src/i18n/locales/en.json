@@ -1,0 +1,41 @@
+{
+  "patients": {
+    "title": "Patients",
+    "addPatient": "Add Patient",
+    "searchPlaceholder": "Search patients...",
+    "name": "Name",
+    "contact": "Contact",
+    "dateOfBirth": "Date of Birth",
+    "actions": "Actions",
+    "createAppointment": "Create Appointment",
+    "edit": "Edit",
+    "delete": "Delete",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "other": "Other",
+    "address": "Address",
+    "medicalHistory": "Medical History",
+    "allergies": "Allergies (comma-separated)",
+    "insurance": {
+      "provider": "Insurance Provider",
+      "policyNumber": "Policy Number",
+      "groupNumber": "Group Number"
+    },
+    "emergencyContact": {
+      "name": "Emergency Contact Name",
+      "relationship": "Emergency Contact Relationship",
+      "phone": "Emergency Contact Phone"
+    },
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "updatePatient": "Update Patient",
+    "addNewPatient": "Add New Patient",
+    "editPatient": "Edit Patient",
+    "deleteConfirm": "Are you sure you want to delete this patient?"
+  }
+} 

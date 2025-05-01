@@ -6,7 +6,12 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Log environment variables for debugging
+console.log('Environment variables loaded:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'Defined' : 'Undefined');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -18,6 +23,7 @@ const userRoutes = require('./routes/userRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const financialRoutes = require('./routes/financialRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const appointmentTypeRoutes = require('./routes/appointmentTypes');
 
 const app = express();
 
@@ -47,7 +53,9 @@ app.use(limiter);
 // Connect to MongoDB with better error handling
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
+    const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/dental-clinic';
+    console.log('Connecting to MongoDB with URI:', mongoURI);
+    await mongoose.connect(mongoURI);
     console.log('MongoDB connected');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -61,6 +69,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentsRoutes);
+app.use('/api/appointment-types', appointmentTypeRoutes);
 app.use('/api/treatments', treatmentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/users', userRoutes);

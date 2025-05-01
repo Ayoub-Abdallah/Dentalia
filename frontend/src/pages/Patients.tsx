@@ -4,6 +4,8 @@ import type { Patient, Appointment } from '../types';
 import { usePatientStore } from '../store/patientStore';
 import { appointmentService } from '../lib/appointmentService';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { PatientsTable } from '../components/PatientsTable';
 
 type Gender = 'male' | 'female' | 'other';
 type AppointmentType = 'checkup' | 'cleaning' | 'filling' | 'root canal' | 'extraction' | 'other';
@@ -12,6 +14,7 @@ type AppointmentStatus = 'scheduled' | 'completed' | 'cancelled' | 'no-show';
 interface FormData {
   firstName: string;
   lastName: string;
+  age: number;
   email: string;
   phone: string;
   dateOfBirth: string;
@@ -45,6 +48,7 @@ interface AppointmentFormData {
 const initialFormData: FormData = {
   firstName: '',
   lastName: '',
+  age: 0,
   email: '',
   phone: '',
   dateOfBirth: '',
@@ -76,6 +80,7 @@ const initialAppointmentFormData: AppointmentFormData = {
 };
 
 export default function Patients() {
+  const { t } = useTranslation();
   const { patients, isLoading, error, fetchPatients, createPatient, updatePatient, deletePatient } = usePatientStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -113,6 +118,7 @@ export default function Patients() {
       const patientData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        age: formData.age,
         email: formData.email,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
@@ -169,6 +175,7 @@ export default function Patients() {
     setFormData({
       firstName: patient.firstName,
       lastName: patient.lastName,
+      age: patient.age,
       email: patient.email,
       phone: patient.phone,
       dateOfBirth: patient.dateOfBirth,
@@ -240,13 +247,13 @@ export default function Patients() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Patients</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('patients.title')}</h1>
         <button
           onClick={() => setShowAddModal(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
         >
           <Plus className="w-5 h-5 mr-2" />
-          Add Patient
+          {t('patients.addPatient')}
         </button>
       </div>
 
@@ -256,7 +263,7 @@ export default function Patients() {
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search patients..."
+            placeholder={t('patients.searchPlaceholder')}
             value={searchQuery}
             onChange={handleSearch}
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -265,58 +272,12 @@ export default function Patients() {
       </div>
 
       <div className="bg-white rounded-lg shadow">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date of Birth</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredPatients.map((patient) => (
-                <tr key={patient._id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {patient.firstName} {patient.lastName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{patient.email}</div>
-                    <div className="text-sm text-gray-500">{patient.phone}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(patient.dateOfBirth).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleCreateAppointment(patient)}
-                      className="text-green-600 hover:text-green-900 mr-4"
-                      title="Create Appointment"
-                    >
-                      <Calendar className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleEdit(patient)}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(patient._id || '')}
-                      className="text-red-600 hover:text-red-900"
-                      disabled={!patient._id}
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <PatientsTable
+          patients={filteredPatients}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onCreateAppointment={handleCreateAppointment}
+        />
       </div>
 
       {/* Patient Modal */}
@@ -325,7 +286,7 @@ export default function Patients() {
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-xl font-semibold">
-                {selectedPatient ? 'Edit Patient' : 'Add New Patient'}
+                {selectedPatient ? t('patients.editPatient') : t('patients.addNewPatient')}
               </h2>
               <button
                 onClick={() => {
@@ -341,7 +302,7 @@ export default function Patients() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
+                    {t('patients.firstName')}
                   </label>
                   <input
                     type="text"
@@ -353,7 +314,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
+                    {t('patients.lastName')}
                   </label>
                   <input
                     type="text"
@@ -365,11 +326,23 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
+                    {t('patients.age')}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) })}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('patients.email')}
                   </label>
                   <input
                     type="email"
-                    required
+                    
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
@@ -377,11 +350,11 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                    {t('patients.phone')}
                   </label>
                   <input
                     type="tel"
-                    required
+                    
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
@@ -389,11 +362,11 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth
+                    {t('patients.dateOfBirth')}
                   </label>
                   <input
                     type="date"
-                    required
+                    
                     value={formData.dateOfBirth}
                     onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
@@ -401,7 +374,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender
+                    {t('patients.gender')}
                   </label>
                   <select
                     required
@@ -409,14 +382,14 @@ export default function Patients() {
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value as Gender })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
+                    <option value="male">{t('patients.male')}</option>
+                    <option value="female">{t('patients.female')}</option>
+                    <option value="other">{t('patients.other')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
+                    {t('patients.address')}
                   </label>
                   <input
                     type="text"
@@ -427,7 +400,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Medical History
+                    {t('patients.medicalHistory')}
                   </label>
                   <textarea
                     value={formData.medicalHistory}
@@ -438,7 +411,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Allergies (comma-separated)
+                    {t('patients.allergies')}
                   </label>
                   <input
                     type="text"
@@ -449,7 +422,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Insurance Provider
+                    {t('patients.insurance.provider')}
                   </label>
                   <input
                     type="text"
@@ -460,7 +433,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Policy Number
+                    {t('patients.insurance.policyNumber')}
                   </label>
                   <input
                     type="text"
@@ -471,7 +444,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Group Number
+                    {t('patients.insurance.groupNumber')}
                   </label>
                   <input
                     type="text"
@@ -482,7 +455,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Emergency Contact Name
+                    {t('patients.emergencyContact.name')}
                   </label>
                   <input
                     type="text"
@@ -493,7 +466,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Emergency Contact Relationship
+                    {t('patients.emergencyContact.relationship')}
                   </label>
                   <input
                     type="text"
@@ -504,7 +477,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Emergency Contact Phone
+                    {t('patients.emergencyContact.phone')}
                   </label>
                   <input
                     type="text"
@@ -515,7 +488,7 @@ export default function Patients() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
+                    {t('patients.notes')}
                   </label>
                   <textarea
                     value={formData.notes}
@@ -534,13 +507,13 @@ export default function Patients() {
                   }}
                   className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('patients.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  {selectedPatient ? 'Update Patient' : 'Add Patient'}
+                  {selectedPatient ? t('patients.updatePatient') : t('patients.addPatient')}
                 </button>
               </div>
             </form>
@@ -554,7 +527,7 @@ export default function Patients() {
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center p-6 border-b">
               <h2 className="text-xl font-semibold">
-                Create Appointment for {selectedPatient.firstName} {selectedPatient.lastName}
+                {t('appointments.createAppointmentFor')} {selectedPatient.firstName} {selectedPatient.lastName}
               </h2>
               <button
                 onClick={() => {
@@ -570,7 +543,7 @@ export default function Patients() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date
+                    {t('appointments.date')}
                   </label>
                   <input
                     type="date"
@@ -582,7 +555,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Time
+                    {t('appointments.startTime')}
                   </label>
                   <input
                     type="time"
@@ -594,7 +567,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Time
+                    {t('appointments.endTime')}
                   </label>
                   <input
                     type="time"
@@ -606,7 +579,7 @@ export default function Patients() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
+                    {t('appointments.type')}
                   </label>
                   <select
                     required
@@ -614,17 +587,17 @@ export default function Patients() {
                     onChange={(e) => setAppointmentFormData({ ...appointmentFormData, type: e.target.value as AppointmentType })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="checkup">Checkup</option>
-                    <option value="cleaning">Cleaning</option>
-                    <option value="filling">Filling</option>
-                    <option value="root canal">Root Canal</option>
-                    <option value="extraction">Extraction</option>
-                    <option value="other">Other</option>
+                    <option value="checkup">{t('appointments.checkup')}</option>
+                    <option value="cleaning">{t('appointments.cleaning')}</option>
+                    <option value="filling">{t('appointments.filling')}</option>
+                    <option value="root canal">{t('appointments.rootCanal')}</option>
+                    <option value="extraction">{t('appointments.extraction')}</option>
+                    <option value="other">{t('appointments.other')}</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Status
+                    {t('appointments.status')}
                   </label>
                   <select
                     required
@@ -632,15 +605,15 @@ export default function Patients() {
                     onChange={(e) => setAppointmentFormData({ ...appointmentFormData, status: e.target.value as AppointmentStatus })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="scheduled">Scheduled</option>
-                    <option value="completed">Completed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="no-show">No Show</option>
+                    <option value="scheduled">{t('appointments.scheduled')}</option>
+                    <option value="completed">{t('appointments.completed')}</option>
+                    <option value="cancelled">{t('appointments.cancelled')}</option>
+                    <option value="no-show">{t('appointments.noShow')}</option>
                   </select>
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Notes
+                    {t('appointments.notes')}
                   </label>
                   <textarea
                     value={appointmentFormData.notes}
@@ -659,13 +632,13 @@ export default function Patients() {
                   }}
                   className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t('patients.cancel')}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  Create Appointment
+                  {t('appointments.createAppointment')}
                 </button>
               </div>
             </form>

@@ -4,18 +4,23 @@ import { useAppointmentStore } from '../store/appointmentStore';
 import { usePatientStore } from '../store/patientStore';
 import { toast } from 'react-hot-toast';
 import { Appointment, AppointmentType, AppointmentStatus } from '../types';
-import { Plus, Search, Edit2, Trash2, X } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Settings } from 'lucide-react';
 import { appointmentService } from '../lib/appointmentService';
+import { AppointmentTypeManager } from '../components/AppointmentTypeManager';
+import { appointmentTypeService } from '../lib/appointmentTypeService';
 
 interface AppointmentFormData {
   patient: string;
+  type: string;
   date: string;
   startTime: string;
   endTime: string;
-  type: AppointmentType;
-  status: AppointmentStatus;
   notes: string;
-  treatmentPlan: string;
+  status: AppointmentStatus;
+}
+
+interface AppointmentFormState extends AppointmentFormData {
+  duration: number;
 }
 
 // Import the AppointmentApiData type from the service
@@ -36,47 +41,62 @@ export default function Appointments() {
   
   const { patients, fetchPatients } = usePatientStore();
   
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [formData, setFormData] = useState<AppointmentFormData>({
+  const [formData, setFormData] = useState<AppointmentFormState>({
     patient: '',
-    date: '',
+    type: '',
+    date: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: '',
-    type: 'checkup',
-    status: 'scheduled',
+    duration: 30,
     notes: '',
-    treatmentPlan: '',
+    status: 'scheduled'
   });
-
-  const appointmentTypes: AppointmentType[] = ['checkup', 'cleaning', 'filling', 'root canal', 'extraction', 'other'];
-
-  const appointmentStatuses: AppointmentStatus[] = ['scheduled', 'completed', 'cancelled', 'no-show'];
+  const [showTypeManager, setShowTypeManager] = useState(false);
+  const [selectedType, setSelectedType] = useState<AppointmentType | null>(null);
 
   useEffect(() => {
     fetchAppointments();
     fetchPatients();
-  }, [fetchAppointments, fetchPatients]);
+    fetchAppointmentTypes();
+  }, []);
+
+  const fetchAppointmentTypes = async () => {
+    try {
+      const types = await appointmentTypeService.getAllAppointmentTypes();
+      setAppointmentTypes(types);
+    } catch (error) {
+      console.error('Error fetching appointment types:', error);
+      toast.error('Failed to fetch appointment types');
+    }
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  const filteredAppointments = appointments.filter(appointment => {
+  const filteredAppointments = appointments.filter((appointment) => {
     const patientName = `${appointment.patient.firstName} ${appointment.patient.lastName}`.toLowerCase();
+    const typeName = appointment.type?.name?.toLowerCase() || '';
     return patientName.includes(searchQuery.toLowerCase()) || 
-           appointment.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           typeName.includes(searchQuery.toLowerCase()) ||
            appointment.status.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Create a copy of formData with the correct patient format
-      const appointmentData: AppointmentApiData = {
-        ...formData,
-        patient: formData.patient // Send just the patient ID
+      const appointmentData: AppointmentFormData = {
+        patient: formData.patient,
+        type: formData.type,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: calculateEndTime(formData.startTime, formData.duration),
+        notes: formData.notes,
+        status: formData.status
       };
 
       if (selectedAppointment?._id) {
@@ -92,13 +112,13 @@ export default function Appointments() {
       setSelectedAppointment(null);
       setFormData({
         patient: '',
-        date: '',
+        type: '',
+        date: new Date().toISOString().split('T')[0],
         startTime: '',
         endTime: '',
-        type: 'checkup',
-        status: 'scheduled',
+        duration: 30,
         notes: '',
-        treatmentPlan: ''
+        status: 'scheduled'
       });
     } catch (error) {
       console.error('Error saving appointment:', error);
@@ -106,16 +126,25 @@ export default function Appointments() {
     }
   };
 
+  const calculateEndTime = (startTime: string, duration: number): string => {
+    if (!startTime) return '';
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(hours, minutes);
+    startDate.setMinutes(startDate.getMinutes() + duration);
+    return `${startDate.getHours().toString().padStart(2, '0')}:${startDate.getMinutes().toString().padStart(2, '0')}`;
+  };
+
   const handleEdit = (appointment: Appointment) => {
     setFormData({
-      patient: appointment.patient._id,
+      patient: appointment.patient._id || '',
+      type: appointment.type?._id || '',
       date: appointment.date,
       startTime: appointment.startTime,
       endTime: appointment.endTime,
-      type: appointment.type,
-      status: appointment.status,
+      duration: appointment.type?.duration || 30,
       notes: appointment.notes || '',
-      treatmentPlan: appointment.treatmentPlan || '',
+      status: appointment.status
     });
     setSelectedAppointment(appointment);
     setShowModal(true);
@@ -137,6 +166,12 @@ export default function Appointments() {
         toast.error(error instanceof Error ? error.message : 'Failed to delete appointment');
       }
     }
+  };
+
+  const handleTypeManagerClose = () => {
+    setShowTypeManager(false);
+    // Refresh appointment types when the type manager is closed
+    fetchAppointmentTypes();
   };
 
   if (loading) {
@@ -161,27 +196,36 @@ export default function Appointments() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-        <button
-          onClick={() => {
-            setSelectedAppointment(null);
-            setFormData({
-              patient: '',
-              date: '',
-              startTime: '',
-              endTime: '',
-              type: 'checkup',
-              status: 'scheduled',
-              notes: '',
-              treatmentPlan: ''
-            });
-            setShowModal(true);
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Add Appointment
-        </button>
+        <h1 className="text-2xl font-semibold">Appointments</h1>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setShowTypeManager(true)}
+            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Manage Types
+          </button>
+          <button
+            onClick={() => {
+              setSelectedAppointment(null);
+              setFormData({
+                patient: '',
+                type: '',
+                date: new Date().toISOString().split('T')[0],
+                startTime: '',
+                endTime: '',
+                duration: 30,
+                notes: '',
+                status: 'scheduled'
+              });
+              setShowModal(true);
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Appointment
+          </button>
+        </div>
       </div>
 
       <div className="mb-6">
@@ -227,7 +271,7 @@ export default function Appointments() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                      {appointment.type}
+                      {appointment.type?.name || 'Unknown'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -287,15 +331,7 @@ export default function Appointments() {
                   <select
                     required
                     value={formData.patient}
-                    onChange={(e) => {
-                      const selectedPatient = patients.find(p => p._id === e.target.value);
-                      if (selectedPatient) {
-                        setFormData({
-                          ...formData,
-                          patient: selectedPatient._id || ''
-                        });
-                      }
-                    }}
+                    onChange={(e) => setFormData({ ...formData, patient: e.target.value })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a patient</option>
@@ -305,6 +341,41 @@ export default function Appointments() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                  </label>
+                  <div className="flex space-x-2">
+                    <select
+                      required
+                      value={formData.type}
+                      onChange={(e) => {
+                        const type = appointmentTypes.find(t => t._id === e.target.value);
+                        setSelectedType(type || null);
+                        setFormData({
+                          ...formData,
+                          type: e.target.value,
+                          duration: type?.duration || 30
+                        });
+                      }}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a type</option>
+                      {appointmentTypes.map((type) => (
+                        <option key={type._id} value={type._id}>
+                          {type.name} ({type.duration} min)
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowTypeManager(true)}
+                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -344,24 +415,6 @@ export default function Appointments() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
-                  </label>
-                  <select
-                    required
-                    name="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as AppointmentType })}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                  >
-                    {appointmentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
                   </label>
                   <select
@@ -371,7 +424,7 @@ export default function Appointments() {
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as AppointmentStatus })}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   >
-                    {appointmentStatuses.map((status) => (
+                    {['scheduled', 'completed', 'cancelled', 'no-show'].map((status) => (
                       <option key={status} value={status}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </option>
@@ -385,17 +438,6 @@ export default function Appointments() {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    rows={3}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Treatment Plan
-                  </label>
-                  <textarea
-                    value={formData.treatmentPlan}
-                    onChange={(e) => setFormData({ ...formData, treatmentPlan: e.target.value })}
                     rows={3}
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
                   />
@@ -420,6 +462,36 @@ export default function Appointments() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showTypeManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h2 className="text-xl font-semibold">Manage Appointment Types</h2>
+              <button
+                onClick={handleTypeManagerClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <AppointmentTypeManager
+                onTypeSelect={(type) => {
+                  setSelectedType(type);
+                  setFormData({
+                    ...formData,
+                    type: type._id,
+                    duration: type.duration
+                  });
+                  setShowTypeManager(false);
+                }}
+                onTypesUpdated={fetchAppointmentTypes}
+              />
+            </div>
           </div>
         </div>
       )}

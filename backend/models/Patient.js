@@ -9,22 +9,28 @@ const patientSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Last name is required']
   },
+  age: {
+    type: Number,
+    min: 0,
+    max: 120,
+    required: [true, 'Age is required']
+  },
   dateOfBirth: {
     type: String,
-    required: [true, 'Date of birth is required']
+    required: [false, 'Date of birth is not required']
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
+    enum: ['male', 'female'],
     required: true
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required']
+    required: [false, 'Phone number is not required']
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: [false, 'Email is not required'],
     match: [
       /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
       'Please add a valid email'

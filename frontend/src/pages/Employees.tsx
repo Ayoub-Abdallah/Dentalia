@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, DollarSign, History, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { employeeService } from '../lib/employeeService';
-import type { Employee } from '../types';
-import type { SalaryPayment } from '../lib/employeeService';
+import type { Employee, SalaryPayment } from '../types';
 
 interface FormData {
   firstName: string;
@@ -18,7 +17,7 @@ interface FormData {
 interface PaymentFormData {
   amount: number;
   type: 'monthly' | 'advance' | 'bonus';
-  date: string;
+  paymentDate: string;
   paymentMethod: 'cash' | 'bank_transfer' | 'check';
   notes?: string;
 }
@@ -46,7 +45,7 @@ export default function Employees() {
   const [paymentFormData, setPaymentFormData] = useState<PaymentFormData>({
     amount: 0,
     type: 'monthly',
-    date: new Date().toISOString().split('T')[0],
+    paymentDate: new Date().toISOString().split('T')[0],
     paymentMethod: 'cash',
     notes: '',
   });
@@ -117,7 +116,7 @@ export default function Employees() {
     setPaymentFormData({
       amount: employee.salary,
       type: 'monthly',
-      date: new Date().toISOString().split('T')[0],
+      paymentDate: new Date().toISOString().split('T')[0],
       paymentMethod: 'cash',
       notes: '',
     });
@@ -143,7 +142,7 @@ export default function Employees() {
     if (!selectedEmployee) return;
 
     try {
-      const paymentData: Omit<SalaryPayment, '_id'> = {
+      const paymentData: Omit<SalaryPayment, '_id' | 'createdAt' | 'updatedAt'> = {
         employeeId: selectedEmployee._id,
         ...paymentFormData,
       };
@@ -225,7 +224,7 @@ export default function Employees() {
                 <td className="px-6 py-4 whitespace-nowrap">{employee.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{employee.phone}</td>
                 <td className="px-6 py-4 whitespace-nowrap capitalize">{employee.role}</td>
-                <td className="px-6 py-4 whitespace-nowrap">${employee.salary}</td>
+                <td className="px-6 py-4 whitespace-nowrap">DA {employee.salary}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     employee.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -420,8 +419,8 @@ export default function Employees() {
                   <label className="block text-sm font-medium text-gray-700">Date</label>
                   <input
                     type="date"
-                    value={paymentFormData.date}
-                    onChange={(e) => setPaymentFormData({ ...paymentFormData, date: e.target.value })}
+                    value={paymentFormData.paymentDate}
+                    onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentDate: e.target.value })}
                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     required
                   />
@@ -499,7 +498,7 @@ export default function Employees() {
                           {new Date(payment.paymentDate).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          ${payment.amount.toFixed(2)}
+                          DA {payment.amount.toFixed(2)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
                           {payment.type === 'monthly' ? 'Monthly Salary' : 

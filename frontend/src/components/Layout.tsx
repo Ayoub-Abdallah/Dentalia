@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth';
+import { useTranslation } from 'react-i18next';
 import { 
   Users, Calendar, FileText, DollarSign, 
   BarChart2, Settings, LogOut,
@@ -11,6 +12,7 @@ const Layout: React.FC = () => {
   const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
@@ -18,14 +20,14 @@ const Layout: React.FC = () => {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Building2 },
-    { name: 'Patients', href: 'patients', icon: Users },
-    { name: 'Appointments', href: 'appointments', icon: Calendar },
-    { name: 'Treatments', href: 'treatments', icon: FileText },
-    { name: 'Employees', href: 'employees', icon: Users },
-    { name: 'Finances', href: 'finances', icon: DollarSign },
-    { name: 'Reports', href: 'reports', icon: BarChart2 },
-    { name: 'Settings', href: 'settings', icon: Settings },
+    { name: t('navigation.dashboard'), href: '/', icon: Building2 },
+    { name: t('navigation.patients'), href: '/patients', icon: Users },
+    { name: t('navigation.appointments'), href: '/appointments', icon: Calendar },
+    { name: t('navigation.treatments'), href: '/treatments', icon: FileText },
+    { name: t('navigation.invoices'), href: '/invoices', icon: FileText },
+    { name: t('navigation.finances'), href: '/finances', icon: DollarSign },
+    { name: t('navigation.reports'), href: '/reports', icon: BarChart2 },
+    { name: t('navigation.settings'), href: '/settings', icon: Settings },
   ];
 
   return (

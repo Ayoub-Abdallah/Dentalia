@@ -29,9 +29,8 @@ router.post(
     [
       check('firstName', 'First name is required').not().isEmpty(),
       check('lastName', 'Last name is required').not().isEmpty(),
-      check('dateOfBirth', 'Date of birth is required').not().isEmpty(),
-      check('gender', 'Gender is required').not().isEmpty(),
-      check('phone', 'Phone number is required').not().isEmpty()
+      check('age', 'Age is required').not().isEmpty(),
+      check('gender', 'Gender is required').not().isEmpty()
     ]
   ],
   async (req, res) => {

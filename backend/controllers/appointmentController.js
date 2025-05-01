@@ -1,128 +1,147 @@
 const Appointment = require('../models/Appointment');
-const Patient = require('../models/Patient');
+const AppointmentType = require('../models/AppointmentType');
+const asyncHandler = require('express-async-handler');
 
 // @desc    Get all appointments
 // @route   GET /api/appointments
-// @access  Public
-exports.getAllAppointments = async (req, res) => {
-  try {
+// @access  Private
+const getAppointments = asyncHandler(async (req, res) => {
     const appointments = await Appointment.find()
-      .populate('patient', 'firstName lastName');
-    res.json(appointments);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color')
+    .sort({ date: 1, startTime: 1 });
+  res.json({ success: true, data: appointments });
+});
 
-// @desc    Get appointment by ID
+// @desc    Get single appointment
 // @route   GET /api/appointments/:id
-// @access  Public
-exports.getAppointmentById = async (req, res) => {
-  try {
+// @access  Private
+const getAppointment = asyncHandler(async (req, res) => {
     const appointment = await Appointment.findById(req.params.id)
-      .populate('patient', 'firstName lastName');
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color');
     
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+    res.status(404);
+    throw new Error('Appointment not found');
     }
     
-    res.json(appointment);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+  res.json({ success: true, data: appointment });
+});
 
-// @desc    Create new appointment
+// @desc    Create appointment
 // @route   POST /api/appointments
-// @access  Public
-exports.createAppointment = async (req, res) => {
-  try {
-    console.log('Create Appointment Request Body:', req.body);
-    
-    // Validate patient ID
-    if (!req.body.patient) {
-      return res.status(400).json({ message: 'Patient ID is required' });
+// @access  Private
+const createAppointment = asyncHandler(async (req, res) => {
+  const { patient, type, date, startTime, endTime, status, notes } = req.body;
+
+  // Validate appointment type
+  const appointmentType = await AppointmentType.findById(type);
+  if (!appointmentType) {
+    res.status(400);
+    throw new Error('Invalid appointment type');
     }
 
-    // Validate treatment plan ID if provided
-    if (req.body.treatmentPlan && !mongoose.Types.ObjectId.isValid(req.body.treatmentPlan)) {
-      return res.status(400).json({ message: 'Invalid treatment plan ID' });
-    }
+  const appointment = await Appointment.create({
+    patient,
+    type,
+    date,
+    startTime,
+    endTime,
+    status,
+    notes
+  });
+    
+  const populatedAppointment = await Appointment.findById(appointment._id)
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color');
 
-    const appointment = new Appointment(req.body);
-    console.log('Created Appointment Object:', appointment);
-    
-    const savedAppointment = await appointment.save();
-    console.log('Saved Appointment:', savedAppointment);
-    
-    const populatedAppointment = await Appointment.findById(savedAppointment._id)
-      .populate('patient', 'firstName lastName');
-    
-    res.status(201).json(populatedAppointment);
-  } catch (error) {
-    console.error('Error creating appointment:', error);
-    res.status(400).json({ message: error.message });
-  }
-};
+  res.status(201).json({ success: true, data: populatedAppointment });
+});
 
 // @desc    Update appointment
 // @route   PUT /api/appointments/:id
-// @access  Public
-exports.updateAppointment = async (req, res) => {
-  try {
-    const appointment = await Appointment.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    ).populate('patient', 'firstName lastName');
+// @access  Private
+const updateAppointment = asyncHandler(async (req, res) => {
+  const { patient, type, date, startTime, endTime, status, notes } = req.body;
+
+  // Validate appointment type if it's being updated
+  if (type) {
+    const appointmentType = await AppointmentType.findById(type);
+    if (!appointmentType) {
+      res.status(400);
+      throw new Error('Invalid appointment type');
+    }
+  }
+
+  const appointment = await Appointment.findById(req.params.id);
     
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+    res.status(404);
+    throw new Error('Appointment not found');
     }
     
-    res.json(appointment);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+  appointment.patient = patient || appointment.patient;
+  appointment.type = type || appointment.type;
+  appointment.date = date || appointment.date;
+  appointment.startTime = startTime || appointment.startTime;
+  appointment.endTime = endTime || appointment.endTime;
+  appointment.status = status || appointment.status;
+  appointment.notes = notes || appointment.notes;
+
+  const updatedAppointment = await appointment.save();
+
+  const populatedAppointment = await Appointment.findById(updatedAppointment._id)
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color');
+
+  res.json({ success: true, data: populatedAppointment });
+});
 
 // @desc    Delete appointment
 // @route   DELETE /api/appointments/:id
-// @access  Public
-exports.deleteAppointment = async (req, res) => {
-  try {
-    const appointment = await Appointment.findByIdAndDelete(req.params.id);
+// @access  Private
+const deleteAppointment = asyncHandler(async (req, res) => {
+  const appointment = await Appointment.findById(req.params.id);
+
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+    res.status(404);
+    throw new Error('Appointment not found');
     }
-    res.json({ message: 'Appointment deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+
+  await appointment.deleteOne();
+
+  res.json({ success: true, data: {} });
+});
 
 // @desc    Get appointments by date
 // @route   GET /api/appointments/date/:date
-// @access  Public
-exports.getAppointmentsByDate = async (req, res) => {
-  try {
+// @access  Private
+const getAppointmentsByDate = asyncHandler(async (req, res) => {
     const appointments = await Appointment.find({ date: req.params.date })
-      .populate('patient', 'firstName lastName');
-    res.json(appointments);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color')
+    .sort({ startTime: 1 });
+  res.json({ success: true, data: appointments });
+});
 
 // @desc    Get appointments by patient
 // @route   GET /api/appointments/patient/:patientId
-// @access  Public
-exports.getAppointmentsByPatient = async (req, res) => {
-  try {
+// @access  Private
+const getAppointmentsByPatient = asyncHandler(async (req, res) => {
     const appointments = await Appointment.find({ patient: req.params.patientId })
-      .populate('patient', 'firstName lastName');
-    res.json(appointments);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    .populate('patient', 'firstName lastName')
+    .populate('type', 'name duration color')
+    .sort({ date: -1, startTime: 1 });
+  res.json({ success: true, data: appointments });
+});
+
+module.exports = {
+  getAppointments,
+  getAppointment,
+  createAppointment,
+  updateAppointment,
+  deleteAppointment,
+  getAppointmentsByDate,
+  getAppointmentsByPatient
 }; 

@@ -45,7 +45,7 @@ export const employeeService = {
 
   async createSalaryPayment(paymentData: Omit<SalaryPayment, '_id' | 'createdAt' | 'updatedAt'>) {
     const response = await api.post('/employees/salary-payments', paymentData);
-    return response.data.data;
+    return response.data;
   },
 
   async updateSalaryPayment(id: string, paymentData: Partial<SalaryPayment>) {
